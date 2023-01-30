@@ -3,7 +3,7 @@ binary serialization and deserialization
 
 # example 
 
-### deserialization
+### serialization 
 
 ```
 public class PlatformDownSendIpSet {
@@ -36,6 +36,58 @@ public class PlatformDownSendIpSet {
     }
 }
 
+public class MessageToByteEncoder extends io.netty.handler.codec.MessageToByteEncoder<Object> {
+
+    private static final GByte G_BYTE = SpringHelper.getBean(GByte.class);
+
+    private static final ChannelService CHANNEL_SERVICE = SpringHelper.getBean(ChannelService.class);
+
+    @Override
+    protected void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) throws Exception {
+        ChannelCache channelCache = CHANNEL_SERVICE.getChannelCache(ctx.channel());
+        log.debug("桩[{}]响应数据:{}", channelCache.getPileCode(), msg.toString());
+
+        int command = (int) msg.getClass().getMethod("getCommand", Integer.class).invoke(msg, channelCache.getProtocolDocVersion());
+        int length = (int) msg.getClass().getMethod("getLength", Integer.class).invoke(msg, channelCache.getProtocolDocVersion());
+        log.debug("桩[{}]响应命令[{}],长度[{}]", channelCache.getPileCode(), String.format("0x%02X", command), length);
+
+        channelCache.updateCommandAndLength(command, length);
+
+        ByteBuf dataOut = Unpooled.buffer(length);
+        G_BYTE.toByteBuf(dataOut, msg, channelCache.getProtocolDocVersion());
+
+        if (channelCache.getEncryption()) {
+            log.debug("桩[{}]响应数据需要加密", channelCache.getPileCode());
+            byte[] bytes = ByteBufUtil.getBytes(dataOut, 0, length, false);
+            dataOut.release();
+
+            byte[] encryptData = CryptoUtil.aesCBCEncrypt(channelCache.getSecretKey(), Constant.JX_SECRET_IV, bytes);
+            if (encryptData == null) {
+                log.error("枪[{}]响应数据加密异常", channelCache.getPileCode());
+                return;
+            }
+            dataOut = Unpooled.wrappedBuffer(encryptData);
+        }
+
+        ByteBuf header = channelCache.getByteBuf().copy();
+        ByteBuf headerAndData = Unpooled.wrappedBuffer(header, dataOut);
+
+        byte checkCode = GByteUtils.getXor(headerAndData.slice(2, length + 12));
+        ByteBuf checkCodeByteBuf = Unpooled.wrappedBuffer(new byte[]{checkCode});
+        ByteBuf frameData = Unpooled.wrappedBuffer(headerAndData, checkCodeByteBuf);
+
+        log.trace("桩[{}]响应原始数据:{}", channelCache.getPileCode(), ByteBufUtil.hexDump(frameData, 0, 15 + length));
+
+        out.writeBytes(frameData);
+        frameData.release();
+    }
+}
+
+```
+
+### deserialization
+
+```
 public interface IMessage {
 
     void handler(ChannelHandlerContext ctx);
@@ -153,52 +205,4 @@ public class ByteToMessageDecoder extends BaseDecoder {
     }
 
 }
-
-public class MessageToByteEncoder extends io.netty.handler.codec.MessageToByteEncoder<Object> {
-
-    private static final GByte G_BYTE = SpringHelper.getBean(GByte.class);
-
-    private static final ChannelService CHANNEL_SERVICE = SpringHelper.getBean(ChannelService.class);
-
-    @Override
-    protected void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) throws Exception {
-        ChannelCache channelCache = CHANNEL_SERVICE.getChannelCache(ctx.channel());
-        log.debug("桩[{}]响应数据:{}", channelCache.getPileCode(), msg.toString());
-
-        int command = (int) msg.getClass().getMethod("getCommand", Integer.class).invoke(msg, channelCache.getProtocolDocVersion());
-        int length = (int) msg.getClass().getMethod("getLength", Integer.class).invoke(msg, channelCache.getProtocolDocVersion());
-        log.debug("桩[{}]响应命令[{}],长度[{}]", channelCache.getPileCode(), String.format("0x%02X", command), length);
-
-        channelCache.updateCommandAndLength(command, length);
-
-        ByteBuf dataOut = Unpooled.buffer(length);
-        G_BYTE.toByteBuf(dataOut, msg, channelCache.getProtocolDocVersion());
-
-        if (channelCache.getEncryption()) {
-            log.debug("桩[{}]响应数据需要加密", channelCache.getPileCode());
-            byte[] bytes = ByteBufUtil.getBytes(dataOut, 0, length, false);
-            dataOut.release();
-
-            byte[] encryptData = CryptoUtil.aesCBCEncrypt(channelCache.getSecretKey(), Constant.JX_SECRET_IV, bytes);
-            if (encryptData == null) {
-                log.error("枪[{}]响应数据加密异常", channelCache.getPileCode());
-                return;
-            }
-            dataOut = Unpooled.wrappedBuffer(encryptData);
-        }
-
-        ByteBuf header = channelCache.getByteBuf().copy();
-        ByteBuf headerAndData = Unpooled.wrappedBuffer(header, dataOut);
-
-        byte checkCode = GByteUtils.getXor(headerAndData.slice(2, length + 12));
-        ByteBuf checkCodeByteBuf = Unpooled.wrappedBuffer(new byte[]{checkCode});
-        ByteBuf frameData = Unpooled.wrappedBuffer(headerAndData, checkCodeByteBuf);
-
-        log.trace("桩[{}]响应原始数据:{}", channelCache.getPileCode(), ByteBufUtil.hexDump(frameData, 0, 15 + length));
-
-        out.writeBytes(frameData);
-        frameData.release();
-    }
-}
-
 ```
