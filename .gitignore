@@ -1,0 +1,14 @@
+*.settings/
+*nbactions.xml
+*.project
+*.classpath
+*.log
+*.idea
+*.factorypath
+*.iml
+*config-file/.git
+*nbproject/
+*.~*
+*zipkin-server-2.19.2-exec.jar
+*.idea/
+*target/
