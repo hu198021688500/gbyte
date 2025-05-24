@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.lang.reflect.*;
 import java.util.*;
 
+import static com.electric.gbyte.internal.$GByte$Preconditions.checkArgument;
+
 /**
  * @author bingo
  */
@@ -70,7 +72,7 @@ public class $GByte$Types {
     }
 
     private static void checkNotPrimitive(Type type) {
-        $GByte$Preconditions.checkArgument(!(type instanceof Class<?>) || !((Class<?>) type).isPrimitive());
+        checkArgument(!(type instanceof Class<?>) || !((Class<?>) type).isPrimitive());
     }
 
     private static final class ParameterizedTypeImpl implements ParameterizedType, Serializable {
@@ -84,7 +86,7 @@ public class $GByte$Types {
             if (rawType instanceof Class<?>) {
                 Class<?> rawTypeAsClass = (Class<?>) rawType;
                 boolean isStaticOrTopLevelClass = Modifier.isStatic(rawTypeAsClass.getModifiers()) || rawTypeAsClass.getEnclosingClass() == null;
-                $GByte$Preconditions.checkArgument(ownerType != null || isStaticOrTopLevelClass);
+                checkArgument(ownerType != null || isStaticOrTopLevelClass);
             }
 
             this.ownerType = ownerType == null ? null : canonicalize(ownerType);
@@ -150,13 +152,13 @@ public class $GByte$Types {
         private final Type lowerBound;
 
         WildcardTypeImpl(Type[] upperBounds, Type[] lowerBounds) {
-            $GByte$Preconditions.checkArgument(lowerBounds.length <= 1);
-            $GByte$Preconditions.checkArgument(upperBounds.length == 1);
+            checkArgument(lowerBounds.length <= 1);
+            checkArgument(upperBounds.length == 1);
 
             if (lowerBounds.length == 1) {
                 $GByte$Preconditions.checkNotNull(lowerBounds[0]);
                 checkNotPrimitive(lowerBounds[0]);
-                $GByte$Preconditions.checkArgument(upperBounds[0] == Object.class);
+                checkArgument(upperBounds[0] == Object.class);
                 this.lowerBound = canonicalize(lowerBounds[0]);
                 this.upperBound = Object.class;
 
@@ -215,7 +217,7 @@ public class $GByte$Types {
             // Neal isn't either but suspects some pathological case related
             // to nested classes exists.
             Type rawType = parameterizedType.getRawType();
-            $GByte$Preconditions.checkArgument(rawType instanceof Class);
+            checkArgument(rawType instanceof Class);
             return (Class<?>) rawType;
 
         } else if (type instanceof GenericArrayType) {
@@ -460,8 +462,29 @@ public class $GByte$Types {
         return resolve(context, contextRawType, toResolve, new HashSet<>());
     }
 
+    private static Type getSupertype(Type context, Class<?> contextRawType, Class<?> supertype) {
+        if (context instanceof WildcardType) {
+            // wildcards are useless for resolving supertypes. As the upper bound has the same raw type, use it instead
+            Type[] bounds = ((WildcardType) context).getUpperBounds();
+            // Currently the JLS only permits one bound for wildcards so using first bound is safe
+            assert bounds.length == 1;
+            context = bounds[0];
+        }
+        checkArgument(supertype.isAssignableFrom(contextRawType));
+        return resolve(context, contextRawType,
+                $GByte$Types.getGenericSupertype(context, contextRawType, supertype));
+    }
+
     public static Type getArrayComponentType(Type array) {
         return array instanceof GenericArrayType ? ((GenericArrayType) array).getGenericComponentType() : ((Class<?>) array).getComponentType();
     }
 
+    public static Type getCollectionElementType(Type context, Class<?> contextRawType) {
+        Type collectionType = getSupertype(context, contextRawType, Collection.class);
+
+        if (collectionType instanceof ParameterizedType) {
+            return ((ParameterizedType) collectionType).getActualTypeArguments()[0];
+        }
+        return Object.class;
+    }
 }

@@ -2,10 +2,7 @@ package com.electric.gbyte;
 
 import com.electric.gbyte.annotations.GByteFieldInfo;
 import com.electric.gbyte.internal.ConstructorConstructor;
-import com.electric.gbyte.internal.bind.ArrayTypeAdapter;
-import com.electric.gbyte.internal.bind.GByteAdapterAnnotationTypeAdapterFactory;
-import com.electric.gbyte.internal.bind.ReflectiveTypeAdapterFactory;
-import com.electric.gbyte.internal.bind.TypeAdapters;
+import com.electric.gbyte.internal.bind.*;
 import com.electric.gbyte.reflect.TypeToken;
 import io.netty.buffer.ByteBuf;
 
@@ -39,30 +36,25 @@ public class GByte {
         f.add(TypeAdapters.newFactory(boolean.class, Boolean.class, TypeAdapters.BOOLEAN));
         f.add(TypeAdapters.newFactory(BigDecimal.class, TypeAdapters.BIG_DECIMAL));
 
-        // 仅支持byte数组
+        // 仅支持byte数组和自定义对象数组
         f.add(ArrayTypeAdapter.FACTORY);
 
         ConstructorConstructor constructorConstructor = new ConstructorConstructor(instanceCreators);
         GByteAdapterAnnotationTypeAdapterFactory gByteAdapterFactory = new GByteAdapterAnnotationTypeAdapterFactory(constructorConstructor);
         f.add(gByteAdapterFactory);
 
+        // 仅支持byte集合和自定义对象集合
+        f.add(new CollectionTypeAdapterFactory(constructorConstructor));
+
         f.add(new ReflectiveTypeAdapterFactory(constructorConstructor, gByteAdapterFactory));
 
         this.factories = Collections.unmodifiableList(f);
-    }
-
-    public void toByteBuf(ByteBuf out, Object src) {
-        this.toByteBuf(out, src, 1);
     }
 
     @SuppressWarnings("unchecked")
     public void toByteBuf(ByteBuf out, Object src, Integer version) {
         TypeAdapter<?> adapter = getAdapter(TypeToken.get(src.getClass()), version);
         ((TypeAdapter<Object>) adapter).write(out, src, new GByteFieldInfo(version));
-    }
-
-    public <T> T fromByteBuf(ByteBuf in, Type typeOfT) {
-        return this.fromByteBuf(in, typeOfT, 1);
     }
 
     @SuppressWarnings("unchecked")
