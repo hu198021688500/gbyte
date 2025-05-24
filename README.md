@@ -22,6 +22,10 @@ public class PileUpSendInfo implements IMessage {
     @GByteField(minVersion = 207, length = 4, offsetType = Constant.NUMBER_OFFSET_DIVIDE, offsetNum = 100)
     private BigDecimal power;
 
+    public static int getCommand() {
+        return 26;
+    }
+    
     public void handler(ChannelHandlerContext ctx) {
         System.out.println(this);
         
