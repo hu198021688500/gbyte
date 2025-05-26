@@ -198,3 +198,6 @@ public class MessageToByteEncoder extends io.netty.handler.codec.MessageToByteEn
     }
 }
 ```
+Email: hu198021688500@163.com 
+
+Wechat: BingoHuGuoBing
