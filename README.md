@@ -11,6 +11,15 @@ public class Address {
     private int port;
 }
 
+public static class Addresses {
+
+    @GByteField(length = 2)
+    private List<Address> addressList;
+
+    @GByteField(length = 3)
+    private byte[] data;
+}
+
 GByte gByte = new GByteBuilder().create();
 ByteBuf data = Unpooled.buffer(41);
 
