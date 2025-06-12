@@ -2,6 +2,15 @@
 
 # 单独使用
 ```
+public class Address {
+
+    @GByteField(length = 15)
+    private String ip;
+
+    @GByteField(length = 4, littleEndian = false)
+    private int port;
+}
+
 GByte gByte = new GByteBuilder().create();
 ByteBuf data = Unpooled.buffer(41);
 
