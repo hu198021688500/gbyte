@@ -1,13 +1,40 @@
 物联网二进制编解码（序列化反序列化）库（JAVA)
 
-# 上行协议接口
+# 单独使用
+```
+GByte gByte = new GByteBuilder().create();
+ByteBuf data = Unpooled.buffer(41);
+
+String ip = "192.168.1.1";
+ByteBufUtil.writeAscii(data, ip);
+data.writeZero(15 - ip.length());
+data.writeInt(8080);
+
+String ip1 = "192.168.1.2";
+ByteBufUtil.writeAscii(data, ip1);
+data.writeZero(15 - ip1.length());
+data.writeInt(8081);
+
+data.writeByte(1);
+data.writeByte(2);
+data.writeByte(3);
+
+Addresses addresses = gByte.fromByteBuf(data, Addresses.class, 1);
+System.out.println(addresses);
+
+// 结果GByteTest.Addresses(addressList=[GByteTest.Address(ip=192.168.1.1, port=8080), GByteTest.Address(ip=192.168.1.2, port=8081)], data=[1, 2, 3])
+```
+
+# 使用Netty框架
+
+## 上行协议接口
 ```
 public interface IMessage {
     void handler(ChannelHandlerContext ctx);
 }
 ```
 
-# 上行协议
+## 上行协议
 ```
 public class PileUpSendInfo implements IMessage {
 
@@ -37,7 +64,7 @@ public class PileUpSendInfo implements IMessage {
     }
 }
 ```
-# 下行协议
+## 下行协议
 ```
 public class PlatformReplyInfo {
 
@@ -52,7 +79,6 @@ public class PlatformReplyInfo {
         return 1;
     }
 }
-
 public GByte gbyte() {
     return new GByteBuilder()
         .registerTypeAdapter(Pile.class, new PileTypeAdapter())
