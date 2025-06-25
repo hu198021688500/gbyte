@@ -1,5 +1,7 @@
 物联网二进制编解码（序列化反序列化）库（JAVA)
 
+简化 云快充 特来电 星星 充电桩协议对接
+
 # 单独使用
 ```
 public class Address {
@@ -41,7 +43,14 @@ Addresses addresses = gByte.fromByteBuf(data, Addresses.class, 1);
 System.out.println(addresses);
 
 // 结果GByteTest.Addresses(addressList=[GByteTest.Address(ip=192.168.1.1, port=8080), GByteTest.Address(ip=192.168.1.2, port=8081)], data=[1, 2, 3])
+
+ByteBuf data1 = Unpooled.buffer(41);
+gByte.toByteBuf(data1, addresses, 1);
+System.out.println(ByteBufUtil.hexDump(data1));
+// 结果 3139322e3136382e312e310000000000001f903139322e3136382e312e320000000000001f91010203
+System.out.println(ByteBufUtil.hexDump(data), ByteBufUtil.hexDump(data1)); //true
 ```
+
 
 # 使用Netty框架
 
