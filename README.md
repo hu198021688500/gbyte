@@ -2,13 +2,13 @@
 
 # GByte
 
-GByte 是一个基于 Netty 框架开发的 Java 序列化与反序列化工具类库，主要用于处理二进制数据流。它支持通过自定义注解（如 `GByteField`）来控制字段的序列化方式，并提供了一套灵活的 `TypeAdapter` 机制，方便开发者定义自己的数据类型处理逻辑。
+GByte 是一个基于 Netty 框架开发的 Java 序列化与反序列化工具类库，主要用于处理二进制数据流。它支持通过自定义注解（如 `GByteField`）来控制字段的序列化方式，并提供了一套灵活的 `TypeAdapter` 机制，方便开发者定义自己的数据类型处理逻辑。可用于物联网设备（充电桩，电单车控制器等）通讯协议的实现。
 
 ## 主要特性
 - 基于 Netty 的 `ByteBuf` 进行数据读写。
 - 支持注解驱动的序列化配置。
-- 提供多种内置类型适配器（如 String、Byte、Integer、Number、BigDecimal、Boolean）。
-- 支持集合类型（List、Set、Map）的序列化与反序列化。
+- 提供多种内置类型适配器（如 String、Byte、Integer、Long、BigDecimal、Boolean）。
+- 支持集合类型（Array、Collection）的序列化与反序列化。
 - 支持版本控制，允许不同版本的数据结构共存。
 - 提供 CRC 校验、位运算、校验和计算等实用方法。
 
@@ -87,6 +87,7 @@ public class PileUpSendInfo implements IMessage {
     @GByteField(minVersion = 207, length = 4, offsetType = Constant.NUMBER_OFFSET_DIVIDE, offsetNum = 100)
     private BigDecimal power;
 
+    // 报文标识
     public static int getCommand() {
         return 26;
     }
@@ -94,8 +95,9 @@ public class PileUpSendInfo implements IMessage {
     public void handler(ChannelHandlerContext ctx) {
         System.out.println(this);
         
-        # todo 业务流程
+        // todo 业务流程
         
+        // 下发
         PlatformReplyInfo platformReplyInfo = new PlatformReplyInfo();
         platformReplyInfo.setRs(0);
         GByteUtils.writeAndFlush(ctx, platformReplyInfo);
@@ -111,6 +113,7 @@ public class PlatformReplyInfo {
     @GByteField(length = 1)
     private Integer rs;
 
+    // 报文标识
     public int getCommand(Integer protocolDocVersion) {
         return 27;
     }
@@ -121,7 +124,7 @@ public class PlatformReplyInfo {
 }
 ```
 
-#### 加载协议
+#### 加载上行协议
 
 ```java
 
