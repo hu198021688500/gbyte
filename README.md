@@ -304,4 +304,8 @@ GByte 支持上行协议接口和下行协议的处理，适用于网络通信�
 
 ## 联系方式
 
-如有问题，请在 Gitee 上提交 Issue 或联系项目维护者。
+Email: hu198021688500@163.com  
+Wechat: BingoHuGuoBing  
+
+如有问题，请在 Gitee 上提交 Issue 或联系项目维护者。  
+https://gitee.com/huaxuan/gbyte.git
